@@ -32,11 +32,16 @@ import { StrategyAuthGuard } from "./guards/strategy-auth.guard";
 import { AdminTwoFactorGuard } from "./guards/admin-two-factor.guard";
 import { TokenBlacklistService } from "./token-blacklist.service";
 import { User } from "../user/entities/user.entity";
+import { ApiKey } from "./entities/api-key.entity";
+import { ApiKeysService } from "./api-keys.service";
+import { ApiKeysController } from "./api-keys.controller";
 import { EmailVerification } from "./entities/email-verification.entity";
 import { Wallet } from "./entities/wallet.entity";
 import { RefreshToken, TwoFactorAuth } from "./entities/auth.entity";
 import { ImpersonationService } from "./impersonation.service";
 import { ImpersonationController } from "./impersonation.controller";
+import { ImpersonationGuard } from "./guards/impersonation.guard";
+import { NotificationModule } from "../../notifications/notification.module";
 
 import { BullModule } from "@nestjs/bull";
 import { AuthEmailProcessor } from "./email-processor.service";
@@ -81,6 +86,7 @@ import { ReferralFraudService } from "src/growth/referral/referral-fraud.service
       }),
     }),
     TypeOrmModule.forFeature([
+      ApiKey,
       User,
       EmailVerification,
       Wallet,
@@ -103,9 +109,17 @@ import { ReferralFraudService } from "src/growth/referral/referral-fraud.service
       }),
     }),
     AuditModule,
+    NotificationModule,
   ],
-  controllers: [AuthController, OAuthController, GrantfoxController, ImpersonationController],
+  controllers: [
+    AuthController,
+    OAuthController,
+    GrantfoxController,
+    ImpersonationController,
+    ApiKeysController,
+  ],
   providers: [
+    ApiKeysService,
     // Legacy services (for backward compatibility)
     AuthService,
     ChallengeService,
@@ -134,6 +148,7 @@ import { ReferralFraudService } from "src/growth/referral/referral-fraud.service
     AdminTwoFactorGuard,
     GrantfoxOAuthService,
     ImpersonationService,
+    ImpersonationGuard,
   ],
   exports: [
     // Legacy exports
@@ -156,8 +171,11 @@ import { ReferralFraudService } from "src/growth/referral/referral-fraud.service
     OAuthStrategy,
     ApiKeyStrategy,
     StrategyAuthGuard,
+    AdminTwoFactorGuard,
     GrantfoxOAuthService,
     ImpersonationService,
+    ImpersonationGuard,
+    TypeOrmModule,
   ],
 })
 export class AuthModule implements OnModuleInit {

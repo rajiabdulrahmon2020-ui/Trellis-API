@@ -16,6 +16,10 @@ import { EnvironmentVariables } from "./config/env.validation";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { TargetAllocationVersion } from "./portfolio/entities/target-allocation.entity";
+import { SubmissionHistory } from "./blockchain/oracle/entities/submission-history.entity";
+import { ApiKey } from "./core/auth/entities/api-key.entity";
+import { PortfolioModule as TargetAllocationModule } from "./portfolio/portfolio.module";
 
 // Modules – core
 import { AuthModule } from "./core/auth/auth.module";
@@ -25,6 +29,7 @@ import { InvitationModule } from "./core/invitation/invitation.module";
 
 // Modules – infrastructure
 import { AuditModule } from "./infrastructure/audit/audit.module";
+import { ApprovalIntentModule } from "./infrastructure/audit/approval-intents/approval-intent.module";
 
 // Modules – blockchain
 import { OracleModule } from "./blockchain/oracle/oracle.module";
@@ -50,14 +55,18 @@ import { ObservabilityModule } from "./observability/observability.module";
 import { MonitoringModule } from "./monitoring/monitoring.module";
 // Modules – profiling
 import { ProfilingModule } from "./profiling/profiling.module";
+// Modules – accessibility contracts
+import { AccessibilityModule } from "./common/accessibility/accessibility.module";
 // Modules - email
 import { EmailModule } from "./email/email.module";
 // Modules – logging
 import { LoggerModule } from "./logging/logger.module";
 // Modules – cache
 import { CacheModule } from "./common/cache/cache.module";
+import { MarketCacheWarmersModule } from "./common/cache/market-cache-warmers.module";
 // Modules – idempotency (replay protection for mutating requests)
 import { IdempotencyModule } from "./common/idempotency/idempotency.module";
+import { ProjectionReplayModule } from "./common/events/replay/projection-replay.module";
 import { BillingModule } from "./billing/billing.module";
 // Modules – payments (plugin system)
 import { PaymentsModule } from "./payments/payments.module";
@@ -158,6 +167,9 @@ import { PauseControlModule } from "./infrastructure/pause-control/pause-control
 import { InvariantMonitorModule } from "./monitoring/invariant-monitor/invariant-monitor.module";
 // Modules – permission matrix
 import { PermissionMatrixModule } from "./common/guard/permission-matrix.module";
+// Modules – risk-scored abuse detection
+import { AbuseDetectionModule } from "./security/abuse-detection/abuse-detection.module";
+import { FeatureRolloutModule } from "./infrastructure/feature-rollout/feature-rollout.module";
 
 // Guards
 import { APP_FILTER } from "@nestjs/core";
@@ -175,6 +187,7 @@ import { ProfilingMiddleware } from "./profiling/profiling.middleware";
 import { GraphqlGatewayModule } from "./graphql/graphql.module";
 import { ModuleRegistryModule } from "./modules/registry/module-registry.module";
 import { QuotaAdminController } from "./common/quota/quota-admin.controller";
+import { ErrorCatalogController } from "./common/errors/error-catalog.controller";
 import { VersioningModule } from "./common/versioning/versioning.module";
 // Modules referenced in `imports[]` that were never imported.
 import { ExportModule } from "./infrastructure/export/export.module";
@@ -199,6 +212,7 @@ import { PauseScope } from "./infrastructure/pause-control/entities/pause-scope.
 import { PauseAuditLog } from "./infrastructure/pause-control/entities/pause-audit-log.entity";
 // Invariant monitor entity
 import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/invariant-report.entity";
+import { ReleaseModule } from "./common/release/release.module";
 
 @Module({
   imports: [
@@ -246,10 +260,12 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
           database: "swaptrade",
           entities: [
             User,
+            ApiKey,
             EmailVerification,
             Wallet,
             SignedPayload,
             SubmissionNonce,
+            SubmissionHistory,
             PriceRecord,
             AgentEvent,
             ComputeResult,
@@ -258,6 +274,7 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
             SensitiveActionEvent,
             SensitiveActionChainHead,
             Portfolio,
+            TargetAllocationVersion,
             PortfolioAsset,
             Transaction,
             RiskProfile,
@@ -325,6 +342,7 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
       },
     }),
 
+    TargetAllocationModule,
     EventEmitterModule.forRoot(),
 
     AuthModule,
@@ -332,6 +350,7 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
     ProfileModule,
     InvitationModule,
     AuditModule,
+    ApprovalIntentModule,
     OracleModule,
     PortfolioModule,
     RiskManagementModule,
@@ -358,7 +377,9 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
     RecoveryModule,
     VersioningModule,
     CacheModule,
+    MarketCacheWarmersModule,
     IdempotencyModule,
+    ProjectionReplayModule,
     RateLimitingModule.forRoot(),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
@@ -384,9 +405,12 @@ import { InvariantReportEntity } from "./monitoring/invariant-monitor/entities/i
     PauseControlModule,
     InvariantMonitorModule,
     PermissionMatrixModule,
+    AbuseDetectionModule,
+    AccessibilityModule,
+    ReleaseModule,
   ],
 
-  controllers: [AppController, QuotaAdminController],
+  controllers: [AppController, QuotaAdminController, ErrorCatalogController],
 
   providers: [
     AppService,
